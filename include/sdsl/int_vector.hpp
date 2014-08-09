@@ -94,9 +94,10 @@ class rank_support_v;
 
 class rank_support;
 
+template<class t_bitvector>
 class select_support;
 
-template<uint8_t t_bit_pattern, uint8_t t_pattern_len>
+template<uint8_t t_bit_pattern, uint8_t t_pattern_len, class t_bitvector>
 class select_support_mcl;
 
 namespace coder
@@ -265,8 +266,8 @@ class int_vector
         typedef typename int_vector_trait<t_width>::int_width_type  int_width_type;
         typedef rank_support_v<1,1>                                 rank_1_type;
         typedef rank_support_v<0,1>                                 rank_0_type;
-        typedef select_support_mcl<1,1>                             select_1_type;
-        typedef select_support_mcl<0,1>                             select_0_type;
+        typedef select_support_mcl<1,1,bit_vector>                  select_1_type;
+        typedef select_support_mcl<0,1,bit_vector>                  select_0_type;
         typedef typename int_vec_category_trait<t_width>::type      index_category;
 
         friend struct int_vector_trait<t_width>;

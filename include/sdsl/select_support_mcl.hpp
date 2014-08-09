@@ -64,14 +64,17 @@ namespace sdsl
  *
  * @ingroup select_support_group
  */
-template<uint8_t t_b=1, uint8_t t_pat_len=1>
-class select_support_mcl : public select_support
+template<uint8_t t_b=1, uint8_t t_pat_len=1, class t_bitvector=int_vector<1>>
+class select_support_mcl : public select_support<t_bitvector>
 {
     private:
         static_assert(t_b == 1u or t_b == 0u or t_b == 10u , "select_support_mcl: bit pattern must be `0`,`1`,`10` or `01`");
         static_assert(t_pat_len == 1u or t_pat_len == 2u , "select_support_mcl: bit pattern length must be 1 or 2");
+        using select_support<>::m_v;
     public:
-        typedef bit_vector bit_vector_type;
+        using select_support<>::v;
+        typedef select_support<>::size_type size_type;
+        typedef t_bitvector bit_vector_type;
         enum { bit_pat = t_b };
     private:
         uint32_t m_logn                 = 0,     // \f$ log(size) \f$
@@ -82,30 +85,30 @@ class select_support_mcl : public select_support
         int_vector<0>* m_longsuperblock = nullptr;
         int_vector<0>* m_miniblock      = nullptr;
         size_type m_arg_cnt             = 0;
-        void copy(const select_support_mcl<t_b, t_pat_len>& ss);
+        void copy(const select_support_mcl<t_b, t_pat_len, t_bitvector>& ss);
         void initData();
-        void init_fast(const bit_vector* v=nullptr);
+        void init_fast(const t_bitvector* v=nullptr);
     public:
-        explicit select_support_mcl(const bit_vector* v=nullptr);
-        select_support_mcl(const select_support_mcl<t_b,t_pat_len>& ss);
-        select_support_mcl(select_support_mcl<t_b,t_pat_len>&& ss);
+        explicit select_support_mcl(const t_bitvector* v=nullptr);
+        select_support_mcl(const select_support_mcl<t_b,t_pat_len,t_bitvector>& ss);
+        select_support_mcl(select_support_mcl<t_b,t_pat_len,t_bitvector>&& ss);
         ~select_support_mcl();
-        void init_slow(const bit_vector* v=nullptr);
+        void init_slow(const t_bitvector* v=nullptr);
         //! Select function
         inline size_type select(size_type i) const;
         //! Alias for select(i).
         inline size_type operator()(size_type i)const;
         size_type serialize(std::ostream& out, structure_tree_node* v=nullptr, std::string name="")const;
-        void load(std::istream& in, const bit_vector* v=nullptr);
-        void set_vector(const bit_vector* v=nullptr);
-        select_support_mcl<t_b, t_pat_len>& operator=(const select_support_mcl& ss);
-        select_support_mcl<t_b, t_pat_len>& operator=(select_support_mcl&&);
-        void swap(select_support_mcl<t_b, t_pat_len>& ss);
+        void load(std::istream& in, const t_bitvector* v=nullptr);
+        void set_vector(const t_bitvector* v=nullptr);
+        select_support_mcl<t_b, t_pat_len, t_bitvector>& operator=(const select_support_mcl& ss);
+        select_support_mcl<t_b, t_pat_len, t_bitvector>& operator=(select_support_mcl&&);
+        void swap(select_support_mcl<t_b, t_pat_len, t_bitvector>& ss);
 };
 
 
-template<uint8_t t_b, uint8_t t_pat_len>
-select_support_mcl<t_b,t_pat_len>::select_support_mcl(const bit_vector* f_v):select_support(f_v)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(const t_bitvector* f_v):select_support<>(f_v)
 {
     if (t_pat_len>1 or(v!=nullptr and  v->size() < 100000))
         init_slow(v);
@@ -114,20 +117,20 @@ select_support_mcl<t_b,t_pat_len>::select_support_mcl(const bit_vector* f_v):sel
     return;
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-select_support_mcl<t_b,t_pat_len>::select_support_mcl(const select_support_mcl& ss):select_support(ss.m_v)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(const select_support_mcl& ss):select_support<>(ss.m_v)
 {
     copy(ss);
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-select_support_mcl<t_b,t_pat_len>::select_support_mcl(select_support_mcl&& ss) : select_support(ss.m_v)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(select_support_mcl&& ss) : select_support<>(ss.m_v)
 {
     *this = std::move(ss);
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-select_support_mcl<t_b, t_pat_len>& select_support_mcl<t_b,t_pat_len>::operator=(const select_support_mcl& ss)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+select_support_mcl<t_b, t_pat_len, t_bitvector>& select_support_mcl<t_b,t_pat_len,t_bitvector>::operator=(const select_support_mcl& ss)
 {
     if (this != &ss) {
         copy(ss);
@@ -135,8 +138,8 @@ select_support_mcl<t_b, t_pat_len>& select_support_mcl<t_b,t_pat_len>::operator=
     return *this;
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-select_support_mcl<t_b, t_pat_len>& select_support_mcl<t_b,t_pat_len>::operator=(select_support_mcl&& ss)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+select_support_mcl<t_b, t_pat_len, t_bitvector>& select_support_mcl<t_b,t_pat_len,t_bitvector>::operator=(select_support_mcl&& ss)
 {
     if (this != &ss) {
         m_logn       = ss.m_logn;      // copy log n
@@ -159,8 +162,8 @@ select_support_mcl<t_b, t_pat_len>& select_support_mcl<t_b,t_pat_len>::operator=
     return *this;
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-void select_support_mcl<t_b,t_pat_len>::swap(select_support_mcl& ss)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+void select_support_mcl<t_b,t_pat_len,t_bitvector>::swap(select_support_mcl& ss)
 {
     std::swap(m_logn, ss.m_logn);
     std::swap(m_logn2, ss.m_logn2);
@@ -171,8 +174,8 @@ void select_support_mcl<t_b,t_pat_len>::swap(select_support_mcl& ss)
     std::swap(m_arg_cnt, ss.m_arg_cnt);
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-void select_support_mcl<t_b,t_pat_len>::copy(const select_support_mcl<t_b, t_pat_len>& ss)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+void select_support_mcl<t_b,t_pat_len,t_bitvector>::copy(const select_support_mcl<t_b, t_pat_len, t_bitvector>& ss)
 {
     m_logn        = ss.m_logn;      // copy log n
     m_logn2      = ss.m_logn2;      // copy (logn)^2
@@ -201,8 +204,8 @@ void select_support_mcl<t_b,t_pat_len>::copy(const select_support_mcl<t_b, t_pat
     }
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-select_support_mcl<t_b,t_pat_len>::~select_support_mcl()
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+select_support_mcl<t_b,t_pat_len,t_bitvector>::~select_support_mcl()
 {
     if (m_longsuperblock!=nullptr)
         delete[] m_longsuperblock;
@@ -210,15 +213,15 @@ select_support_mcl<t_b,t_pat_len>::~select_support_mcl()
         delete[] m_miniblock;
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-void select_support_mcl<t_b,t_pat_len>::init_slow(const bit_vector* v)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+void select_support_mcl<t_b,t_pat_len,t_bitvector>::init_slow(const t_bitvector* v)
 {
     set_vector(v);
     initData();
     if (m_v==nullptr)
         return;
     // Count the number of arguments in the bit vector
-    m_arg_cnt = select_support_trait<t_b,t_pat_len>::arg_cnt(*v);
+    m_arg_cnt = select_support_trait<t_b,t_pat_len,t_bitvector>::arg_cnt(*v);
 
     const size_type SUPER_BLOCK_SIZE = 4096;
 
@@ -235,7 +238,7 @@ void select_support_mcl<t_b,t_pat_len>::init_slow(const bit_vector* v)
     size_type arg_position[SUPER_BLOCK_SIZE], arg_cnt=0;
     size_type sb_cnt=0;
     for (size_type i=0; i < v->size(); ++i) {
-        if (select_support_trait<t_b,t_pat_len>::found_arg(i, *v)) {
+        if (select_support_trait<t_b,t_pat_len,t_bitvector>::found_arg(i, *v)) {
             arg_position[ arg_cnt%SUPER_BLOCK_SIZE ] = i;
             assert(arg_position[arg_cnt%SUPER_BLOCK_SIZE] == i);
             ++arg_cnt;
@@ -262,15 +265,15 @@ void select_support_mcl<t_b,t_pat_len>::init_slow(const bit_vector* v)
 }
 
 // TODO: find bug, detected by valgrind
-template<uint8_t t_b, uint8_t t_pat_len>
-void select_support_mcl<t_b,t_pat_len>::init_fast(const bit_vector* v)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+void select_support_mcl<t_b,t_pat_len,t_bitvector>::init_fast(const t_bitvector* v)
 {
     set_vector(v);
     initData();
     if (m_v==nullptr)
         return;
     // Count the number of arguments in the bit vector
-    m_arg_cnt = select_support_trait<t_b,t_pat_len>::arg_cnt(*v);
+    m_arg_cnt = select_support_trait<t_b,t_pat_len,t_bitvector>::arg_cnt(*v);
 
     const size_type SUPER_BLOCK_SIZE = 64*64;
 
@@ -285,13 +288,13 @@ void select_support_mcl<t_b,t_pat_len>::init_fast(const bit_vector* v)
     m_superblock = int_vector<0>(sb, 0, m_logn);// TODO: hier koennte man logn noch optimieren...s
 
     bit_vector::size_type arg_position[SUPER_BLOCK_SIZE];
-    const uint64_t* data = v->data();
+    auto data = v->data();
     uint64_t carry_new=0;
     size_type last_k64 = 1, sb_cnt=0;
     for (size_type i=0, cnt_old=0, cnt_new=0, last_k64_sum=1; i < v->capacity(); i+=64, ++data) {
-        cnt_new += select_support_trait<t_b, t_pat_len>::args_in_the_word(*data, carry_new);
+        cnt_new += select_support_trait<t_b, t_pat_len, t_bitvector>::args_in_the_word(*data, carry_new);
         if (cnt_new >= last_k64_sum) {
-            arg_position[last_k64-1] = i + select_support_trait<t_b, t_pat_len>::ith_arg_pos_in_the_word(*data, last_k64_sum  - cnt_old, carry_new);
+            arg_position[last_k64-1] = i + select_support_trait<t_b, t_pat_len, t_bitvector>::ith_arg_pos_in_the_word(*data, last_k64_sum  - cnt_old, carry_new);
             last_k64 += 64;
             last_k64_sum += 64;
 
@@ -300,7 +303,7 @@ void select_support_mcl<t_b,t_pat_len>::init_fast(const bit_vector* v)
                 size_type pos_of_last_arg_in_the_block = arg_position[last_k64-65];
 
                 for (size_type i=arg_position[last_k64-65]+1, j=last_k64-65; i < v->size() and j < SUPER_BLOCK_SIZE; ++i)
-                    if (select_support_trait<t_b,t_pat_len>::found_arg(i, *v)) {
+                    if (select_support_trait<t_b,t_pat_len,t_bitvector>::found_arg(i, *v)) {
                         pos_of_last_arg_in_the_block = i;
                         ++j;
                     }
@@ -310,7 +313,7 @@ void select_support_mcl<t_b,t_pat_len>::init_fast(const bit_vector* v)
                     // GEANDERT am 2010-07-17 +1 nach pos_of_last_arg..
                     m_longsuperblock[sb_cnt] = int_vector<0>(SUPER_BLOCK_SIZE, 0, bits::hi(pos_of_last_arg_in_the_block) + 1);
                     for (size_type j=arg_position[0], k=0; k < SUPER_BLOCK_SIZE and j <= pos_of_last_arg_in_the_block; ++j)
-                        if (select_support_trait<t_b, t_pat_len>::found_arg(j, *v)) {
+                        if (select_support_trait<t_b, t_pat_len, t_bitvector>::found_arg(j, *v)) {
                             if (k>=SUPER_BLOCK_SIZE) {
                                 for (size_type ii=0; ii < SUPER_BLOCK_SIZE; ++ii) {
                                     std::cout<<"("<<ii<<","<<m_longsuperblock[sb_cnt][ii]<<") ";
@@ -339,7 +342,7 @@ void select_support_mcl<t_b,t_pat_len>::init_fast(const bit_vector* v)
         if (m_longsuperblock == nullptr) m_longsuperblock = new int_vector<0>[sb+1]; // create longsuperblock
         m_longsuperblock[sb_cnt] = int_vector<0>(SUPER_BLOCK_SIZE, 0, bits::hi(v->size()-1) + 1);
         for (size_type i=arg_position[0],k=0; i < v->size(); ++i) {
-            if (select_support_trait<t_b, t_pat_len>::found_arg(i, *v)) {
+            if (select_support_trait<t_b, t_pat_len, t_bitvector>::found_arg(i, *v)) {
                 m_longsuperblock[sb_cnt][k++] = i;
             }
         }
@@ -348,8 +351,8 @@ void select_support_mcl<t_b,t_pat_len>::init_fast(const bit_vector* v)
 }
 
 
-template<uint8_t t_b, uint8_t t_pat_len>
-inline auto select_support_mcl<t_b,t_pat_len>::select(size_type i)const -> size_type
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+inline auto select_support_mcl<t_b,t_pat_len,t_bitvector>::select(size_type i)const -> size_type
 {
     assert(i > 0 and i <= m_arg_cnt);
 
@@ -372,39 +375,39 @@ inline auto select_support_mcl<t_b,t_pat_len>::select(size_type i)const -> size_
             // now pos is the position from where we search for the ith argument
             size_type word_pos = pos>>6;
             size_type word_off = pos&0x3F;
-            const uint64_t* data = m_v->data() + word_pos;
-            uint64_t carry = select_support_trait<t_b,t_pat_len>::init_carry(data, word_pos);
-            size_type args = select_support_trait<t_b,t_pat_len>::args_in_the_first_word(*data, word_off, carry);
+            auto data = m_v->data() + word_pos;
+            uint64_t carry = select_support_trait<t_b,t_pat_len,t_bitvector>::init_carry(data, word_pos);
+            size_type args = select_support_trait<t_b,t_pat_len,t_bitvector>::args_in_the_first_word(*data, word_off, carry);
 
             if (args >= i) {
-                return (word_pos<<6)+select_support_trait<t_b,t_pat_len>::ith_arg_pos_in_the_first_word(*data, i, word_off, carry);
+                return (word_pos<<6)+select_support_trait<t_b,t_pat_len,t_bitvector>::ith_arg_pos_in_the_first_word(*data, i, word_off, carry);
             }
             word_pos+=1;
             size_type sum_args = args;
-            carry = select_support_trait<t_b,t_pat_len>::get_carry(*data);
+            carry = select_support_trait<t_b,t_pat_len,t_bitvector>::get_carry(*data);
             uint64_t old_carry = carry;
-            args = select_support_trait<t_b,t_pat_len>::args_in_the_word(*(++data), carry);
+            args = select_support_trait<t_b,t_pat_len,t_bitvector>::args_in_the_word(*(++data), carry);
             while (sum_args + args < i) {
                 sum_args += args;
                 assert(data+1 < m_v->data() + (m_v->capacity()>>6));
                 old_carry = carry;
-                args = select_support_trait<t_b,t_pat_len>::args_in_the_word(*(++data), carry);
+                args = select_support_trait<t_b,t_pat_len,t_bitvector>::args_in_the_word(*(++data), carry);
                 word_pos+=1;
             }
             return (word_pos<<6) +
-                   select_support_trait<t_b,t_pat_len>::ith_arg_pos_in_the_word(*data, i-sum_args, old_carry);
+                   select_support_trait<t_b,t_pat_len,t_bitvector>::ith_arg_pos_in_the_word(*data, i-sum_args, old_carry);
         }
     }
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-inline auto select_support_mcl<t_b,t_pat_len>::operator()(size_type i)const -> size_type
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+inline auto select_support_mcl<t_b,t_pat_len,t_bitvector>::operator()(size_type i)const -> size_type
 {
     return select(i);
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-void select_support_mcl<t_b,t_pat_len>::initData()
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+void select_support_mcl<t_b,t_pat_len,t_bitvector>::initData()
 {
     m_arg_cnt = 0;
     if (nullptr == m_v) {
@@ -422,14 +425,14 @@ void select_support_mcl<t_b,t_pat_len>::initData()
     m_miniblock = nullptr;
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-void select_support_mcl<t_b,t_pat_len>::set_vector(const bit_vector* v)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+void select_support_mcl<t_b,t_pat_len,t_bitvector>::set_vector(const t_bitvector* v)
 {
     m_v = v;
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-auto select_support_mcl<t_b,t_pat_len>::serialize(std::ostream& out, structure_tree_node* v, std::string name)const -> size_type
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+auto select_support_mcl<t_b,t_pat_len,t_bitvector>::serialize(std::ostream& out, structure_tree_node* v, std::string name)const -> size_type
 {
     structure_tree_node* child = structure_tree::add_child(v, name, util::class_name(*this));
     size_type written_bytes = 0;
@@ -467,8 +470,8 @@ auto select_support_mcl<t_b,t_pat_len>::serialize(std::ostream& out, structure_t
     return written_bytes;
 }
 
-template<uint8_t t_b, uint8_t t_pat_len>
-void select_support_mcl<t_b,t_pat_len>::load(std::istream& in, const bit_vector* v)
+template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
+void select_support_mcl<t_b,t_pat_len,t_bitvector>::load(std::istream& in, const t_bitvector* v)
 {
     set_vector(v);
     initData();

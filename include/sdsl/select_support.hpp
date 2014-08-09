@@ -34,18 +34,19 @@ namespace sdsl
 //! The base class of classes supporting select queries for a sdsl::bit_vector in constant time.
 /*! Abstract base class for classes supporting select queries.
  */
+template<class t_bitvector=int_vector<1>>
 class select_support
 {
     protected:
-        const int_vector<1>* m_v; //!< Pointer to the select supported sdsl::bit_vector.
+        const t_bitvector* m_v; //!< Pointer to the select supported sdsl::bit_vector.
     public:
-        typedef int_vector<1>::size_type size_type;
-        const bit_vector* v;
+        typedef typename t_bitvector::size_type size_type;
+        const t_bitvector* v;
 
         //! Constructor of select_support.
         /*! \param v The bit_vector to support rank queries.
          */
-        select_support(const int_vector<1>* f_v=nullptr):v(f_v) {
+        select_support(const t_bitvector* f_v=nullptr):v(f_v) {
             m_v = f_v;
         }
         //! Copy constructor
@@ -74,19 +75,19 @@ class select_support
         	\param v The bit_vector to be supported.
         	\sa init, select.
          */
-        virtual void load(std::istream& in, const int_vector<1>* v=nullptr) = 0;
+        virtual void load(std::istream& in, const t_bitvector* v=nullptr) = 0;
 
         //! This method sets the supported bit_vector
-        virtual void set_vector(const int_vector<1>* v=nullptr) = 0;
+        virtual void set_vector(const t_bitvector* v=nullptr) = 0;
 };
 
 
-template<uint8_t bit_pattern, uint8_t pattern_len>
+template<uint8_t bit_pattern, uint8_t pattern_len, class t_bitvector>
 struct select_support_trait {
-    typedef select_support::size_type	size_type;
-
+    typedef typename select_support<t_bitvector>::size_type size_type;
+    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
     /* Count the number of arguments for the specific select support */
-    static size_type arg_cnt(const bit_vector&) {
+    static size_type arg_cnt(const t_bitvector&) {
         return 0;
     }
 
@@ -106,11 +107,11 @@ struct select_support_trait {
         return 0;
     }
 
-    static bool found_arg(size_type, const bit_vector&) {
+    static bool found_arg(size_type, const t_bitvector&) {
         return 0;
     }
 
-    static uint64_t init_carry(const uint64_t*, size_type) {
+    static uint64_t init_carry(const_iterator, size_type) {
         return 0;
     }
 
@@ -119,11 +120,12 @@ struct select_support_trait {
     }
 };
 
-template<>
-struct select_support_trait<0,1> {
-    typedef select_support::size_type	size_type;
+template<class t_bitvector>
+struct select_support_trait<0,1,t_bitvector> {
+    typedef typename select_support<t_bitvector>::size_type size_type;
+    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
 
-    static size_type arg_cnt(const bit_vector& v) {
+    static size_type arg_cnt(const t_bitvector& v) {
         return v.bit_size()-util::cnt_one_bits(v);
     }
     static size_type args_in_the_first_word(uint64_t w, uint8_t offset, uint64_t) {
@@ -138,10 +140,10 @@ struct select_support_trait<0,1> {
     static size_type ith_arg_pos_in_the_word(uint64_t w, size_type i, uint64_t) {
         return bits::sel(~w, i);
     }
-    static bool found_arg(size_type i, const bit_vector& v) {
+    static bool found_arg(size_type i, const t_bitvector& v) {
         return !v[i];
     }
-    static uint64_t init_carry(const uint64_t*, size_type) {
+    static uint64_t init_carry(const_iterator, size_type) {
         return 0;
     }
     static uint64_t get_carry(uint64_t) {
@@ -149,11 +151,12 @@ struct select_support_trait<0,1> {
     }
 };
 
-template<>
-struct select_support_trait<1,1> {
-    typedef select_support::size_type	size_type;
+template<class t_bitvector>
+struct select_support_trait<1,1,t_bitvector> {
+    typedef typename select_support<t_bitvector>::size_type	size_type;
+    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
 
-    static size_type arg_cnt(const bit_vector& v) {
+    static size_type arg_cnt(const t_bitvector& v) {
         return util::cnt_one_bits(v);
     }
     static size_type args_in_the_first_word(uint64_t w, uint8_t offset, uint64_t) {
@@ -168,10 +171,10 @@ struct select_support_trait<1,1> {
     static size_type ith_arg_pos_in_the_word(uint64_t w, size_type i, uint64_t) {
         return bits::sel(w, i);
     }
-    static bool found_arg(size_type i, const bit_vector& v) {
+    static bool found_arg(size_type i, const t_bitvector& v) {
         return v[i];
     }
-    static uint64_t init_carry(const uint64_t*, size_type) {
+    static uint64_t init_carry(const_iterator, size_type) {
         return 0;
     }
     static uint64_t get_carry(uint64_t) {
@@ -179,11 +182,12 @@ struct select_support_trait<1,1> {
     }
 };
 
-template<>
-struct select_support_trait<10,2> {
-    typedef select_support::size_type	size_type;
+template<class t_bitvector>
+struct select_support_trait<10,2,t_bitvector> {
+    typedef typename select_support<t_bitvector>::size_type size_type;
+    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
 
-    static size_type arg_cnt(const bit_vector& v) {
+    static size_type arg_cnt(const t_bitvector& v) {
         return util::cnt_onezero_bits(v);
     }
     static size_type args_in_the_first_word(uint64_t w, uint8_t offset, uint64_t carry) {
@@ -198,12 +202,12 @@ struct select_support_trait<10,2> {
     static size_type ith_arg_pos_in_the_word(uint64_t w, size_type i, uint64_t carry) {
         return bits::sel(bits::map10(w, carry), i);
     }
-    static bool found_arg(size_type i, const bit_vector& v) {
+    static bool found_arg(size_type i, const t_bitvector& v) {
         if (i > 0 and v[i-1] and !v[i])
             return true;
         return false;
     }
-    static uint64_t init_carry(const uint64_t* data, size_type word_pos) {
+    static uint64_t init_carry(const_iterator data, size_type word_pos) {
         return word_pos ? (*(data-1)>>63) : 0;
     }
     static uint64_t get_carry(uint64_t w) {
@@ -211,11 +215,12 @@ struct select_support_trait<10,2> {
     }
 };
 
-template<>
-struct select_support_trait<01,2> {
-    typedef select_support::size_type	size_type;
+template<class t_bitvector>
+struct select_support_trait<01,2,t_bitvector> {
+    typedef typename select_support<t_bitvector>::size_type size_type;
+    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
 
-    static size_type arg_cnt(const bit_vector& v) {
+    static size_type arg_cnt(const t_bitvector& v) {
         return util::cnt_zeroone_bits(v);
     }
     static size_type args_in_the_first_word(uint64_t w, uint8_t offset, uint64_t carry) {
@@ -230,12 +235,12 @@ struct select_support_trait<01,2> {
     static size_type ith_arg_pos_in_the_word(uint64_t w, size_type i, uint64_t carry) {
         return bits::sel(bits::map01(w, carry), i);
     }
-    static bool found_arg(size_type i, const bit_vector& v) {
+    static bool found_arg(size_type i, const t_bitvector& v) {
         if (i > 0 and !v[i-1] and v[i])
             return true;
         return false;
     }
-    static uint64_t init_carry(const uint64_t* data, size_type word_pos) {
+    static uint64_t init_carry(const_iterator data, size_type word_pos) {
         return word_pos ? (*(data-1)>>63) : 1;
     }
     static uint64_t get_carry(uint64_t w) {
