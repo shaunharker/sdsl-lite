@@ -85,7 +85,7 @@ class select_support
 template<uint8_t bit_pattern, uint8_t pattern_len, class t_bitvector>
 struct select_support_trait {
     typedef typename select_support<t_bitvector>::size_type size_type;
-    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
+    typedef decltype(std::declval<t_bitvector const>().data()) t_const_uint64_iter; 
     /* Count the number of arguments for the specific select support */
     static size_type arg_cnt(const t_bitvector&) {
         return 0;
@@ -111,7 +111,7 @@ struct select_support_trait {
         return 0;
     }
 
-    static uint64_t init_carry(const_iterator, size_type) {
+    static uint64_t init_carry(t_const_uint64_iter, size_type) {
         return 0;
     }
 
@@ -123,7 +123,7 @@ struct select_support_trait {
 template<class t_bitvector>
 struct select_support_trait<0,1,t_bitvector> {
     typedef typename select_support<t_bitvector>::size_type size_type;
-    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
+    typedef decltype(std::declval<t_bitvector const>().data()) t_const_uint64_iter; 
 
     static size_type arg_cnt(const t_bitvector& v) {
         return v.bit_size()-util::cnt_one_bits(v);
@@ -143,7 +143,7 @@ struct select_support_trait<0,1,t_bitvector> {
     static bool found_arg(size_type i, const t_bitvector& v) {
         return !v[i];
     }
-    static uint64_t init_carry(const_iterator, size_type) {
+    static uint64_t init_carry(t_const_uint64_iter, size_type) {
         return 0;
     }
     static uint64_t get_carry(uint64_t) {
@@ -154,7 +154,7 @@ struct select_support_trait<0,1,t_bitvector> {
 template<class t_bitvector>
 struct select_support_trait<1,1,t_bitvector> {
     typedef typename select_support<t_bitvector>::size_type	size_type;
-    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
+    typedef decltype(std::declval<t_bitvector const>().data()) t_const_uint64_iter; 
 
     static size_type arg_cnt(const t_bitvector& v) {
         return util::cnt_one_bits(v);
@@ -174,7 +174,7 @@ struct select_support_trait<1,1,t_bitvector> {
     static bool found_arg(size_type i, const t_bitvector& v) {
         return v[i];
     }
-    static uint64_t init_carry(const_iterator, size_type) {
+    static uint64_t init_carry(t_const_uint64_iter, size_type) {
         return 0;
     }
     static uint64_t get_carry(uint64_t) {
@@ -185,7 +185,7 @@ struct select_support_trait<1,1,t_bitvector> {
 template<class t_bitvector>
 struct select_support_trait<10,2,t_bitvector> {
     typedef typename select_support<t_bitvector>::size_type size_type;
-    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
+    typedef decltype(std::declval<t_bitvector const>().data()) t_const_uint64_iter; 
 
     static size_type arg_cnt(const t_bitvector& v) {
         return util::cnt_onezero_bits(v);
@@ -207,7 +207,7 @@ struct select_support_trait<10,2,t_bitvector> {
             return true;
         return false;
     }
-    static uint64_t init_carry(const_iterator data, size_type word_pos) {
+    static uint64_t init_carry(t_const_uint64_iter data, size_type word_pos) {
         return word_pos ? (*(data-1)>>63) : 0;
     }
     static uint64_t get_carry(uint64_t w) {
@@ -218,7 +218,7 @@ struct select_support_trait<10,2,t_bitvector> {
 template<class t_bitvector>
 struct select_support_trait<01,2,t_bitvector> {
     typedef typename select_support<t_bitvector>::size_type size_type;
-    typedef decltype(std::declval<t_bitvector const>().data()) const_iterator; 
+    typedef decltype(std::declval<t_bitvector const>().data()) t_const_uint64_iter; 
 
     static size_type arg_cnt(const t_bitvector& v) {
         return util::cnt_zeroone_bits(v);
@@ -240,7 +240,7 @@ struct select_support_trait<01,2,t_bitvector> {
             return true;
         return false;
     }
-    static uint64_t init_carry(const_iterator data, size_type word_pos) {
+    static uint64_t init_carry(t_const_uint64_iter data, size_type word_pos) {
         return word_pos ? (*(data-1)>>63) : 1;
     }
     static uint64_t get_carry(uint64_t w) {
