@@ -2,12 +2,15 @@
 #include <utility>
 #include <algorithm>
 #include <chrono>
+#include <stdexcept>
 
-#include "sdsl/bits.hpp"
+#include "sdsl/util.hpp"
 #include "sdsl/user_bitvector.hpp"
 #include "sdsl/select_support_mcl.hpp"
 #include "sdsl/rank_support_v5.hpp"
 
+/// class TwoCache
+///   simple caching mechanism (stores last two distinct results)
 template<class K, class T>
 class TwoCache {
 public:
@@ -33,7 +36,6 @@ private:
   K key1; T data1;
   K key2; T data2;
 };
-
 /// We want to make a bitvector z out of bitvectors x and y
 /// such that:
 /// length(y) == rank0(x) (i.e. total number of 0's in x)
@@ -92,43 +94,25 @@ private:
 
 };
 
+template <class Functor>
+void timetrial ( Functor const& f, uint64_t start, uint64_t end ) 
+{
+  auto starttime = std::chrono::high_resolution_clock::now();
+  for ( uint64_t i = start; i <= end; ++ i ) f(i);
+  auto endtime = std::chrono::high_resolution_clock::now();
+  auto dur = std::chrono::duration_cast<std::chrono::nanoseconds>(endtime - starttime);
+  std::cout << "Measured time: " << dur.count()/(double)(end-start+1) << "ns per operation\n";
+}
+
 int main ( void ) {
+  /// GENERATE RANDOM BITVECTORS
   uint64_t N = 1000000;
   sdsl::bit_vector x ( N );
-  sdsl::bit_vector y ( N );
-  for ( uint64_t i = 0; i < N; ++ i ) {
-    x [ i ] = rand () % 2;
-    y [ i ] = rand () % 2;
-  }
+  uint64_t M = N - sdsl::util::cnt_one_bits(x);
+  sdsl::bit_vector y ( M );
+  for ( uint64_t i = 0; i < N; ++ i ) x [ i ] = rand () % 2;
+  for ( uint64_t i = 0; i < M; ++ i ) y [ i ] = rand () % 2;
   my_bitvector z ( x, y );
-
-#if 0
-  std::cout << "x: ";
-  for ( uint64_t i = 0; i < N; ++ i ) {
-    std::cout << ( x[i] ? "1" : "0" );
-  }
-  std::cout << "\n";
-
-  std::cout << "y: ";
-  for ( uint64_t i = 0; i < N; ++ i ) {
-    std::cout << ( y[i] ? "1" : "0" );
-  }
-  std::cout << "\n";
-
-  sdsl::select_support_mcl<1,1> selecttest ( &x );
-
-  std::cout << "z: ";
-  for ( uint64_t i = 0; i < N; ++ i ) {
-    std::cout << ( z[i] ? "1" : "0" );
-    if ( z[i] ) ++ count;
-  }
-#endif
-  int64_t count = 0;
-  for ( uint64_t i = 0; i < N; ++ i ) {
-    if ( z[i] ) ++ count;
-  }
-  //std::cout << "\n count = " << count << "\n";
-
 
   /// USER BITVECTOR EXAMPLE
   typedef sdsl::user_bitvector<my_bitvector> custom_bitvector;
@@ -137,88 +121,49 @@ int main ( void ) {
 
   /// USUAL SDSL::BITVECTOR EXAMPLE
   sdsl::bit_vector w ( N );
-  for ( uint64_t i = 0; i < N; ++ i ) {
-    w[i] = bv[i];
-  }
+  for ( uint64_t i = 0; i < N; ++ i ) w[i] = bv[i];
   sdsl::select_support_mcl<> selectw ( &w );
 
-  /// TEST FOR CORRECTNESS
-  for ( uint64_t i = 0; i < N; ++ i ) {
-    if ( w[i] != bv[i] ) {
-      std::cout << "Implementation error. vectors not same!\n";
-      abort ();
-    }
-  }
-  for ( uint64_t i = 1; i <= count; ++ i ) {
-    if ( select(i) != selectw(i) ) {
-      std::cout << "Implementation error. select(" << i 
-        << ") = " << select(i) << " and selectw("<<i<<")=" << selectw(i) << "\n";
-      std::cout << "count = " << count << "\n";
-      std::cout << bv[select(i)] << " " << w[selectw(i)] << "\n";
-      std::cout << bv[selectw(i)] << " " << w[select(i)] << "\n";
+  /// TEST TO MAKE SURE user_bitvector works with sdsl::util
+  int64_t L = sdsl::util::cnt_one_bits(bv);
 
-      abort ();
-    }
-  }
+  /// TEST TO CHECK BITVECTOR CONSTRUCTED PROPERLY
+  std::cout << "Testing access of user bit-vector.\n";
+  timetrial ( [&] (uint64_t i) { 
+    if ( w[i] != bv[i] ) { 
+      throw std::logic_error("Implementation error. vectors not same!\n");
+    } }, 0, N-1 );
+
+  /// TEST TO MAKE SURE RESULTS MATCH
+  std::cout << "Ensuring results of user bit-vector and sdsl::bit_vector are same.\n";
+  timetrial ( [&] (uint64_t i) { 
+      if ( select(i) != selectw(i) ) { 
+        throw std::logic_error("Select not implemented properly.\n");
+      } }, 1, L );
   std::cout << "Passed test.\n";
 
   /// FORWARD SEQUENTIAL SPEED TEST
   std::cout << "Sequential speed of select_support on user bit-vector.\n";
-  auto start = std::chrono::high_resolution_clock::now();
-  for ( uint64_t i = 1; i <= count; ++ i ) {
-    select ( i );
-  }
-  auto end = std::chrono::high_resolution_clock::now();
-  auto dur = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-  std::cout << "Measured time: " << dur.count()/(double)N << "ns per select operation\n";
+  timetrial ( [&] (uint64_t i) { select(i); }, 1, L );
 
   std::cout << "Sequential speed of select_support on sdsl::bit_vector\n";
-  start = std::chrono::high_resolution_clock::now();
-  for ( uint64_t i = 1; i <= count; ++ i ) {
-    selectw ( i );
-  }
-  end = std::chrono::high_resolution_clock::now();
-  dur = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-  std::cout << "Measured time: " << dur.count()/(double)N << "ns per select operation\n";
-
+  timetrial ( [&] (uint64_t i) { selectw(i); }, 1, L );
 
   /// BACKWARD SEQUENTIAL SPEED TEST
   std::cout << "Backwards sequential speed of select_support on user bit-vector\n";
-  start = std::chrono::high_resolution_clock::now();
-  for ( uint64_t i = count; i >= 1; -- i ) {
-    select ( i );
-  }
-  end = std::chrono::high_resolution_clock::now();
-  dur = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-  std::cout << "Measured time: " << dur.count()/(double)N << "ns per select operation\n";
+  timetrial ( [&] (uint64_t i) { select(L - i + 1); }, 1, L );
 
   std::cout << "Backwards sequential speed of select_support on sdsl::bit_vector\n";
-  start = std::chrono::high_resolution_clock::now();
-  for ( uint64_t i = count; i >= 1; -- i ) {
-    selectw ( i );
-  }
-  end = std::chrono::high_resolution_clock::now();
-  dur = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-  std::cout << "Measured time: " << dur.count()/(double)N << "ns per select operation\n";
+  timetrial ( [&] (uint64_t i) { selectw(L - i + 1); }, 1, L );
 
   /// RANDOM ACCESS SPEED TEST
   std::cout << "Random access speed of select_support on user bit-vector\n";
-  start = std::chrono::high_resolution_clock::now();
-  for ( uint64_t i = count; i >= 1; -- i ) {
-    select ( 1 + rand()%count );
-  }
-  end = std::chrono::high_resolution_clock::now();
-  dur = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-  std::cout << "Measured time: " << dur.count()/(double)N << "ns per select operation\n";
+  timetrial ( [&] (uint64_t i) { select( 1 + rand()%L ); }, 1, L );
 
   std::cout << "Random access speed of select_support on sdsl::bit_vector\n";
-  start = std::chrono::high_resolution_clock::now();
-  for ( uint64_t i = count; i >= 1; -- i ) {
-    selectw ( 1 + rand()%count );
-  }
-  end = std::chrono::high_resolution_clock::now();
-  dur = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-  std::cout << "Measured time: " << dur.count()/(double)N << "ns\n";
+  timetrial ( [&] (uint64_t i) { selectw( 1 + rand()%L ); }, 1, L );
 
   return 0;
 }
+
+
