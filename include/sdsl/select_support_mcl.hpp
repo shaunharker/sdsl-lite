@@ -364,15 +364,6 @@ inline auto select_support_mcl<t_b,t_pat_len,t_bitvector>::select(size_type i)co
     } else {
         if ((offset&0x3F)==0) {
             assert(sb_idx < m_superblock.size());
-            // DEBUG BEGIN
-            // std::cout << "select(" << i+1 << ")\n";
-            // std::cout << "offset = " << offset << "  ... x64 = " << (offset>>6) << "\n";
-            // std::cout << "sb_idx = " << sb_idx << "\n";
-            // std::cout << "sb = " << ((m_arg_cnt+4095)>>12) << "\n";
-            // std::cout << "m_arg_cnt = " << m_arg_cnt << "\n";
-            // std::cout << "m_miniblock[sb_idx].size()=" << m_miniblock[sb_idx].size() << "\n";
-            // DEBUG END
-
             assert((offset>>6) < m_miniblock[sb_idx].size());
             return m_superblock[sb_idx] + m_miniblock[sb_idx][offset>>6/*/64*/];
         } else {
