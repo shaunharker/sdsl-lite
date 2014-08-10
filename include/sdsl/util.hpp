@@ -365,7 +365,7 @@ void util::set_random_bits(t_int_vec& v, int seed)
     } else
         rng.seed(seed);
 
-    uint64_t* data = v.data();
+    auto data = v.data();
     if (v.empty())
         return;
     *data = rng();
@@ -394,8 +394,8 @@ void util::bit_compress(t_int_vec& v)
     uint8_t min_width = bits::hi(max)+1;
     uint8_t old_width = v.width();
     if (old_width > min_width) {
-        const uint64_t* read_data = v.data();
-        uint64_t* write_data = v.data();
+        auto read_data = const_cast<const t_int_vec&>(v).data();
+        auto write_data = v.data();
         uint8_t read_offset = 0;
         uint8_t write_offset = 0;
         for (typename t_int_vec::size_type i=0; i < v.size(); ++i) {
@@ -427,7 +427,7 @@ void util::expand_width(t_int_vec& v, uint8_t new_width)
 template<class t_int_vec>
 void util::_set_zero_bits(t_int_vec& v)
 {
-    uint64_t* data = v.data();
+    auto data = v.data();
     if (v.empty())
         return;
     // TODO: replace by memset() but take care of size_t in the argument!
@@ -440,7 +440,7 @@ void util::_set_zero_bits(t_int_vec& v)
 template<class t_int_vec>
 void util::_set_one_bits(t_int_vec& v)
 {
-    uint64_t* data = v.data();
+    auto data = v.data();
     if (v.empty())
         return;
     *data = 0xFFFFFFFFFFFFFFFFULL;
@@ -452,7 +452,7 @@ void util::_set_one_bits(t_int_vec& v)
 template<class t_int_vec>
 void util::set_to_value(t_int_vec& v, uint64_t k)
 {
-    uint64_t* data = v.data();
+    auto data = v.data();
     if (v.empty())
         return;
     uint8_t int_width = v.width();
@@ -501,14 +501,20 @@ void util::set_to_id(t_int_vec& v)
 template<class t_int_vec>
 typename t_int_vec::size_type util::cnt_one_bits(const t_int_vec& v)
 {
-    const uint64_t* data = v.data();
+    auto data = v.data();
+    //std::cout << " data begin = " << (*data) << "\n";
+
     if (v.empty())
         return 0;
     typename t_int_vec::size_type result = bits::cnt(*data);
     for (typename t_int_vec::size_type i=1; i < (v.capacity()>>6); ++i) {
+        //std::cout << "Incremented! i = " << i << " v.capacity() = " << v.capacity() << "\n";
         result += bits::cnt(*(++data));
     }
     if (v.bit_size()&0x3F) {
+        //std::cout << " A = " << ~bits::lo_set[v.bit_size()&0x3F] << "\n";
+        //std::cout << " B = " << (*data) << "\n";
+        //std::cout << " C = " << bits::cnt((*data) & (~bits::lo_set[v.bit_size()&0x3F])) << "\n";
         result -= bits::cnt((*data) & (~bits::lo_set[v.bit_size()&0x3F]));
     }
     return result;
@@ -518,7 +524,7 @@ typename t_int_vec::size_type util::cnt_one_bits(const t_int_vec& v)
 template<class t_int_vec>
 typename t_int_vec::size_type util::cnt_onezero_bits(const t_int_vec& v)
 {
-    const uint64_t* data = v.data();
+    auto data = v.data();
     if (v.empty())
         return 0;
     uint64_t carry = 0, oldcarry=0;
@@ -536,7 +542,7 @@ typename t_int_vec::size_type util::cnt_onezero_bits(const t_int_vec& v)
 template<class t_int_vec>
 typename t_int_vec::size_type util::cnt_zeroone_bits(const t_int_vec& v)
 {
-    const uint64_t* data = v.data();
+    auto data = v.data();
     if (v.empty())
         return 0;
     uint64_t carry = 1, oldcarry = 1;

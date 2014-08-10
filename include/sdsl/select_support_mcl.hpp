@@ -70,10 +70,10 @@ class select_support_mcl : public select_support<t_bitvector>
     private:
         static_assert(t_b == 1u or t_b == 0u or t_b == 10u , "select_support_mcl: bit pattern must be `0`,`1`,`10` or `01`");
         static_assert(t_pat_len == 1u or t_pat_len == 2u , "select_support_mcl: bit pattern length must be 1 or 2");
-        using select_support<>::m_v;
+        using select_support<t_bitvector>::m_v;
     public:
-        using select_support<>::v;
-        typedef select_support<>::size_type size_type;
+        using select_support<t_bitvector>::v;
+        typedef typename select_support<t_bitvector>::size_type size_type;
         typedef t_bitvector bit_vector_type;
         enum { bit_pat = t_b };
     private:
@@ -108,7 +108,7 @@ class select_support_mcl : public select_support<t_bitvector>
 
 
 template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
-select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(const t_bitvector* f_v):select_support<>(f_v)
+select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(const t_bitvector* f_v):select_support<t_bitvector>(f_v)
 {
     if (t_pat_len>1 or(v!=nullptr and  v->size() < 100000))
         init_slow(v);
@@ -118,13 +118,13 @@ select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(const t_bitvec
 }
 
 template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
-select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(const select_support_mcl& ss):select_support<>(ss.m_v)
+select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(const select_support_mcl& ss):select_support<t_bitvector>(ss.m_v)
 {
     copy(ss);
 }
 
 template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
-select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(select_support_mcl&& ss) : select_support<>(ss.m_v)
+select_support_mcl<t_b,t_pat_len,t_bitvector>::select_support_mcl(select_support_mcl&& ss) : select_support<t_bitvector>(ss.m_v)
 {
     *this = std::move(ss);
 }
@@ -225,6 +225,7 @@ void select_support_mcl<t_b,t_pat_len,t_bitvector>::init_slow(const t_bitvector*
 
     const size_type SUPER_BLOCK_SIZE = 4096;
 
+    std::cout << "Look at this great initialized value: m_arg_cnt = " << m_arg_cnt << "\n";
     if (m_arg_cnt==0) // if there are no arguments in the vector we are done...
         return;
 
@@ -355,7 +356,6 @@ template<uint8_t t_b, uint8_t t_pat_len, class t_bitvector>
 inline auto select_support_mcl<t_b,t_pat_len,t_bitvector>::select(size_type i)const -> size_type
 {
     assert(i > 0 and i <= m_arg_cnt);
-
     i = i-1;
     size_type sb_idx = i>>12;   // i/4096
     size_type offset = i&0xFFF; // i%4096
@@ -364,6 +364,15 @@ inline auto select_support_mcl<t_b,t_pat_len,t_bitvector>::select(size_type i)co
     } else {
         if ((offset&0x3F)==0) {
             assert(sb_idx < m_superblock.size());
+            // DEBUG BEGIN
+            // std::cout << "select(" << i+1 << ")\n";
+            // std::cout << "offset = " << offset << "  ... x64 = " << (offset>>6) << "\n";
+            // std::cout << "sb_idx = " << sb_idx << "\n";
+            // std::cout << "sb = " << ((m_arg_cnt+4095)>>12) << "\n";
+            // std::cout << "m_arg_cnt = " << m_arg_cnt << "\n";
+            // std::cout << "m_miniblock[sb_idx].size()=" << m_miniblock[sb_idx].size() << "\n";
+            // DEBUG END
+
             assert((offset>>6) < m_miniblock[sb_idx].size());
             return m_superblock[sb_idx] + m_miniblock[sb_idx][offset>>6/*/64*/];
         } else {

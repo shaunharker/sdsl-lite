@@ -47,15 +47,15 @@ class select_support_scan : public select_support<t_bitvector>
     private:
         static_assert(t_b == 1u or t_b == 0u or t_b == 10u , "select_support_scan: bit pattern must be `0`,`1`,`10` or `01`");
         static_assert(t_pat_len == 1u or t_pat_len == 2u , "select_support_scan: bit pattern length must be 1 or 2");
-        using select_support<>::m_v;
+        using select_support<t_bitvector>::m_v;
     public:
-        using select_support<>::v;
-        typedef select_support<>::size_type size_type;
+        using select_support<t_bitvector>::v;
+        typedef typename select_support<t_bitvector>::size_type size_type;
         typedef t_bitvector bit_vector_type;
         enum { bit_pat = t_b };
     public:
-        explicit select_support_scan(const t_bitvector* v=nullptr) : select_support<>(v) {}
-        select_support_scan(const select_support_scan<t_b,t_pat_len,t_bitvector>& ss) : select_support<>(ss.m_v) {}
+        explicit select_support_scan(const t_bitvector* v=nullptr) : select_support<t_bitvector>(v) {}
+        select_support_scan(const select_support_scan<t_b,t_pat_len,t_bitvector>& ss) : select_support<t_bitvector>(ss.m_v) {}
 
         inline size_type select(size_type i) const;
         inline size_type operator()(size_type i)const {
