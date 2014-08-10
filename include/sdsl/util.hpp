@@ -502,19 +502,13 @@ template<class t_int_vec>
 typename t_int_vec::size_type util::cnt_one_bits(const t_int_vec& v)
 {
     auto data = v.data();
-    //std::cout << " data begin = " << (*data) << "\n";
-
     if (v.empty())
         return 0;
     typename t_int_vec::size_type result = bits::cnt(*data);
     for (typename t_int_vec::size_type i=1; i < (v.capacity()>>6); ++i) {
-        //std::cout << "Incremented! i = " << i << " v.capacity() = " << v.capacity() << "\n";
         result += bits::cnt(*(++data));
     }
     if (v.bit_size()&0x3F) {
-        //std::cout << " A = " << ~bits::lo_set[v.bit_size()&0x3F] << "\n";
-        //std::cout << " B = " << (*data) << "\n";
-        //std::cout << " C = " << bits::cnt((*data) & (~bits::lo_set[v.bit_size()&0x3F])) << "\n";
         result -= bits::cnt((*data) & (~bits::lo_set[v.bit_size()&0x3F]));
     }
     return result;
