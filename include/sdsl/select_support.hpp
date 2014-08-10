@@ -33,6 +33,7 @@ namespace sdsl
 {
 //! The base class of classes supporting select queries for a sdsl::bit_vector in constant time.
 /*! Abstract base class for classes supporting select queries.
+ *  \tparam t_bitvector Bitvector class (must support operator[], size, capacity, and data)
  */
 template<class t_bitvector=int_vector<1>>
 class select_support
@@ -72,7 +73,7 @@ class select_support
         //! Load the select_support from an in file stream.
         /*!	Load an previously serialized select_support from a std::istream.
         	\param in The std::istream to load the select_support.
-        	\param v The bit_vector to be supported.
+        	\param v The bitvector to be supported.
         	\sa init, select.
          */
         virtual void load(std::istream& in, const t_bitvector* v=nullptr) = 0;

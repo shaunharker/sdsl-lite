@@ -53,7 +53,7 @@ namespace sdsl
  *
  * \tparam t_b       Bit pattern `0`,`1`,`10`,`01` which should be ranked.
  * \tparam t_pat_len Length of the bit pattern.
- *
+ * \tparam t_bitvector Bitvector class (must support operator[], size, capacity, and data)
  * The implementation is a practical variant of the following reference:
  *
  * \par Reference

@@ -38,6 +38,7 @@ namespace sdsl
  *
  *  \tparam t_b       Bit pattern which should be supported. Either `0`,`1`,`10`,`01`.
  *  \tparam t_pat_len Length of the bit pattern.
+ *  \tparam t_bitvector Bitvector class (must support operator[], size, capacity, and data)
  * @ingroup select_support_group
  */
 template<uint8_t t_b=1, uint8_t t_pat_len=1, class t_bitvector=int_vector<1>>
