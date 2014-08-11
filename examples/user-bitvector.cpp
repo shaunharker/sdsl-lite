@@ -9,12 +9,13 @@
 #include "sdsl/select_support_mcl.hpp"
 #include "sdsl/rank_support_v5.hpp"
 
-/// my_bitvector   (basic example)
+/// slow_bitvector   (basic example -- "slow" since it doesn't have optimized access)
 ///   We want to make a bitvector z out of bitvectors x and y
 ///   such that: z[i] := x[i] || y[rank0(x,i)];
 ///   We provide methods
 ///      * size
 ///      * operator []
+///   but not the "read_word" method (see fast_bitvector below)
 class slow_bitvector {
 public:
   slow_bitvector ( sdsl::bit_vector const* x, sdsl::bit_vector const* y ) : m_x(x),m_y(y) {
@@ -63,7 +64,7 @@ private:
 };
 
 /// fast_bitvector
-///   Same as my_bitvector, except we provide another method
+///   Same as slow_bitvector, except we provide also the method
 ///   *  read_word
 ///   which provides a faster method for reading a 64-bit word
 class fast_bitvector {
