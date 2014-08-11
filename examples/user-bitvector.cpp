@@ -128,7 +128,7 @@ void timetrial ( Functor const& f, uint64_t start, uint64_t end )
 }
 
 /// main function
-///   * creates my_bitvector example
+///   * creates slow_bitvector example
 ///   * creates fast_bitvector example
 ///   * creates sdsl::bit_vector example
 ///   * runs checks and time trials
