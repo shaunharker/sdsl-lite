@@ -29,12 +29,45 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+
 //! Namespace for the succinct data structure library.
 namespace sdsl
 {
 
-template<class t_bitvector>
-class user_bitvector_const_iterator;
+
+//! An iterator class to access 64-bit words of user-defined bitvectors
+/*! 
+ *  With boost this could be shorted to:
+ *  typedef boost::transform_iterator<std::function<uint64_t const(int64_t)>, 
+ *          boost::counting_iterator<int64_t>> user_bitvector_const_iterator;
+ */
+class user_bitvector_const_iterator : public std::iterator<std::random_access_iterator_tag, uint64_t const, int64_t>
+{
+private:
+    typedef typename user_bitvector<t_bitvector>::Functor Functor;
+    difference_type m_pos;
+    Functor m_fun;
+public:
+    user_bitvector_const_iterator() {}
+    user_bitvector_const_iterator(difference_type pos, Functor const& fun) : m_pos(pos), m_fun(fun) {}
+    user_bitvector_const_iterator(difference_type pos, Functor && fun) : m_pos(pos), m_fun(fun) {}
+    value_type operator*() {return m_fun(m_pos);}
+    value_type operator[](difference_type diff) {return m_fun(m_pos+diff);}
+    bool operator==(const user_bitvector_const_iterator& rhs) {return m_pos==rhs.m_pos;}
+    bool operator!=(const user_bitvector_const_iterator& rhs) {return m_pos!=rhs.m_pos;}
+    bool operator>=(const user_bitvector_const_iterator& rhs) {return m_pos>=rhs.m_pos;}
+    bool operator<=(const user_bitvector_const_iterator& rhs) {return m_pos<=rhs.m_pos;}
+    bool operator>(const user_bitvector_const_iterator& rhs) {return m_pos>rhs.m_pos;}
+    bool operator<(const user_bitvector_const_iterator& rhs) {return m_pos<rhs.m_pos;}
+    user_bitvector_const_iterator & operator+= ( difference_type diff ) { m_pos += diff; return *this;}
+    user_bitvector_const_iterator & operator-= ( difference_type diff ) { m_pos -= diff; return *this;}
+    user_bitvector_const_iterator & operator++ () {++m_pos; return *this;}
+    user_bitvector_const_iterator & operator-- () {--m_pos; return *this;}
+    user_bitvector_const_iterator operator+ ( difference_type diff ) {return user_bitvector_const_iterator ( m_pos + diff, m_fun );}
+    user_bitvector_const_iterator operator- ( difference_type diff ) {return user_bitvector_const_iterator ( m_pos - diff, m_fun );}
+    user_bitvector_const_iterator operator++ (int) { user_bitvector_const_iterator tmp(*this); operator++(); return tmp; }
+    user_bitvector_const_iterator operator-- (int) { user_bitvector_const_iterator tmp(*this); operator--(); return tmp; }
+};
 
 //! A class to support user-defined bitvectors
 /*! 
@@ -45,7 +78,7 @@ class user_bitvector : public t_bitvector
 {
 public:
     typedef uint64_t size_type;
-    typedef user_bitvector_const_iterator<t_bitvector> t_const_uint64_iter;
+    typedef user_bitvector_const_iterator t_const_uint64_iter;
     typedef std::function < uint64_t const ( int64_t ) > Functor;
     //typedef boost::transform_iterator<Functor, boost::counting_iterator<int64_t> > t_const_uint64_iter;
 
@@ -81,57 +114,39 @@ public:
         return size ();
     }
 private:
-    typedef typename t_const_uint64_iter::difference_type difference_type;
-    using t_bitvector::read_word;
-#if 0
+    typedef t_const_uint64_iter::difference_type difference_type;
     //! Read the 64-bit word indexed by the argument
     /*! \returns 64-bit word indexed by argument word_pos
      */
     uint64_t read_word(difference_type word_pos) const {
-        size_type bit_pos = word_pos<<6;
-        size_type bit_pos_end = std::min(bit_pos+64,size());
-        uint64_t result = 0;
-        uint64_t digit = 0;
-        while (bit_pos != bit_pos_end) result |= ( ((uint64_t)(*this)[bit_pos++]) << digit++ );
-        //std::cout << "read_word(" << word_pos << ") = " << result << "\n";
+        return readword ( static_cast<t_bitvector const*>(this), word_pos );
+    }
+
+    // SFINAE idiom to dispatch to read_word if it is available
+    template<class T>
+    static auto readword_imp(T const* obj, difference_type word_pos, int) 
+        -> decltype( obj -> read_word ( word_pos ) )
+    {
+        return obj -> read_word ( word_pos );
+    }
+
+    template<class T>
+    static auto readword_imp(T const* obj, difference_type word_pos, long) -> uint64_t 
+    {
+        difference_type bit_pos = word_pos<<6;
+        difference_type bit_pos_end = std::min(bit_pos+64,(difference_type)(obj->size()));
+        uint64_t result = 0, digit = 0;
+        while (bit_pos != bit_pos_end) result |= ( ((uint64_t)(*obj)[bit_pos++]) << digit++ );
         return result;
     }
-#endif
 
-};
-
-//! An iterator class to access 64-bit words of user-defined bitvectors
-/*! 
- *  \tparam t_bitvector Bitvector class (must support operator[] and size)
- */
-template<class t_bitvector>
-class user_bitvector_const_iterator : public std::iterator<std::random_access_iterator_tag, uint64_t const, int64_t>
-{
-private:
-    typedef typename user_bitvector<t_bitvector>::Functor Functor;
-    difference_type m_pos;
-    Functor m_fun;
-public:
-    user_bitvector_const_iterator() {}
-    user_bitvector_const_iterator(difference_type pos, Functor const& fun) : m_pos(pos), m_fun(fun) {}
-    user_bitvector_const_iterator(difference_type pos, Functor && fun) : m_pos(pos), m_fun(fun) {}
-    value_type operator*() {return m_fun(m_pos);}
-    value_type operator[](difference_type diff) {return m_fun(m_pos+diff);}
-    bool operator==(const user_bitvector_const_iterator& rhs) {return m_pos==rhs.m_pos;}
-    bool operator!=(const user_bitvector_const_iterator& rhs) {return m_pos!=rhs.m_pos;}
-    bool operator>=(const user_bitvector_const_iterator& rhs) {return m_pos>=rhs.m_pos;}
-    bool operator<=(const user_bitvector_const_iterator& rhs) {return m_pos<=rhs.m_pos;}
-    bool operator>(const user_bitvector_const_iterator& rhs) {return m_pos>rhs.m_pos;}
-    bool operator<(const user_bitvector_const_iterator& rhs) {return m_pos<rhs.m_pos;}
-    user_bitvector_const_iterator & operator+= ( difference_type diff ) { m_pos += diff; return *this;}
-    user_bitvector_const_iterator & operator-= ( difference_type diff ) { m_pos -= diff; return *this;}
-    user_bitvector_const_iterator & operator++ () {++m_pos; return *this;}
-    user_bitvector_const_iterator & operator-- () {--m_pos; return *this;}
-    user_bitvector_const_iterator operator+ ( difference_type diff ) {return user_bitvector_const_iterator ( m_pos + diff, m_fun );}
-    user_bitvector_const_iterator operator- ( difference_type diff ) {return user_bitvector_const_iterator ( m_pos - diff, m_fun );}
-    user_bitvector_const_iterator operator++ (int) { user_bitvector_const_iterator tmp(*this); operator++(); return tmp; }
-    user_bitvector_const_iterator operator-- (int) { user_bitvector_const_iterator tmp(*this); operator--(); return tmp; }
+    template<class T>
+    static auto readword(T const* obj, difference_type word_pos) -> uint64_t
+    {
+        return readword_imp(obj, word_pos, 0);
+    }
 };
 
 } // end namespace
+
 #endif
