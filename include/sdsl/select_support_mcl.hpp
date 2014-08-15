@@ -225,7 +225,6 @@ void select_support_mcl<t_b,t_pat_len,t_bitvector>::init_slow(const t_bitvector*
 
     const size_type SUPER_BLOCK_SIZE = 4096;
 
-    std::cout << "Look at this great initialized value: m_arg_cnt = " << m_arg_cnt << "\n";
     if (m_arg_cnt==0) // if there are no arguments in the vector we are done...
         return;
 

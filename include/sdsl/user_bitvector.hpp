@@ -78,8 +78,11 @@ class user_bitvector : public t_bitvector
 {
 public:
     typedef uint64_t size_type;
+    typedef uint64_t value_type;
     typedef user_bitvector_const_iterator t_const_uint64_iter;
-    typedef std::function < uint64_t const ( int64_t ) > Functor;
+    typedef t_const_uint64_iter::difference_type difference_type;
+
+    typedef std::function < value_type const ( int64_t ) > Functor;
     //typedef boost::transform_iterator<Functor, boost::counting_iterator<int64_t> > t_const_uint64_iter;
 
     using t_bitvector::operator[];
@@ -101,7 +104,7 @@ public:
     /*! \returns Const iterator to the raw data of the user_bitvector
      */
     t_const_uint64_iter data() const {
-        return t_const_uint64_iter ( 0, std::bind ( &user_bitvector<t_bitvector>::read_word, this, std::placeholders::_1 ));
+        return t_const_uint64_iter ( 0, std::bind ( &user_bitvector<t_bitvector>::get_int, this, std::placeholders::_1 ));
     }
 
     //! Report if user_bitvector is empty or not
@@ -113,14 +116,15 @@ public:
     size_type bit_size () const {
         return size ();
     }
-private:
-    typedef t_const_uint64_iter::difference_type difference_type;
+    
     //! Read the 64-bit word indexed by the argument
     /*! \returns 64-bit word indexed by argument word_pos
      */
-    uint64_t read_word(difference_type word_pos) const {
+    value_type get_int(difference_type word_pos) const {
         return readword ( static_cast<t_bitvector const*>(this), word_pos );
     }
+private:
+
 
     // SFINAE idiom to dispatch to read_word if it is available
     template<class T>
